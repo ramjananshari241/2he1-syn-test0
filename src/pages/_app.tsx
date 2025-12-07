@@ -41,7 +41,7 @@ function BlogApp({ Component, pageProps, router }: AppPropsWithLayout) {
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
         <title>{pageProps?.siteTitle?.text}</title>
-        <meta name="description" content="异次元の机智君" />
+        <meta name="description" content="PRO+" />
         <link
           rel="apple-touch-icon"
           sizes="180x180"
