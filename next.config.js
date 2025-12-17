@@ -21,7 +21,7 @@ const nextConfig = {
         // 图片压缩
         formats: ['image/avif', 'image/webp'],
         // 允许next/image加载的图片 域名
-        domains: ['x1image.top', 'www.imgccc.com', 'static.anzifan.com', 'cdn.sspai.com', 'cdn.dribbble.com', 'image.freepik.com', 'avatars.githubusercontent.com', 'cdn.jsdelivr.net', 'images.unsplash.com',
+        domains: ['upload.cc', 'x1image.top', 'www.imgccc.com', 'static.anzifan.com', 'cdn.sspai.com', 'cdn.dribbble.com', 'image.freepik.com', 'avatars.githubusercontent.com', 'cdn.jsdelivr.net', 'images.unsplash.com',
                  'img.notionusercontent.com',
                 'gravatar.com',
                 'www.notion.so',
