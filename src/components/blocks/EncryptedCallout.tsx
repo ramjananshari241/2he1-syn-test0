@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Callout } from './BasicBlock'
 
 export const EncryptedCallout = ({ block, children }: { block: any; children: any }) => {
@@ -16,6 +16,7 @@ export const EncryptedCallout = ({ block, children }: { block: any; children: an
   const [input, setInput] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [error, setError] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (localStorage.getItem(`unlocked-${block.id}`) === 'true') {
@@ -36,69 +37,80 @@ export const EncryptedCallout = ({ block, children }: { block: any; children: an
     }
   };
 
-  // 🎨 预处理 Block：
-  // 无论是否解锁，我们都先把 "LOCK:xxx" 这行字去掉，
-  // 否则在模糊背景里会看到这行乱码，影响美观。
+  // 🎨 预处理 Block
   const cleanBlock = {
     ...block,
     callout: { ...block.callout, rich_text: [] }
   };
 
   return (
-    <div className="relative my-8 rounded-2xl overflow-hidden shadow-2xl group border border-neutral-200 dark:border-neutral-800">
+    // 外层容器：控制圆角和阴影
+    <div 
+        ref={containerRef}
+        className="relative my-8 rounded-2xl shadow-2xl group border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black transition-all duration-500 ease-in-out"
+    >
       
       {/* =========================================================
-          第一层：底层内容层 (The Content Layer)
-          逻辑：始终渲染内容！但是未解锁时，加高斯模糊，禁止鼠标交互
+          关键修改：高度控制层
+          1. 锁定状态：限制最大高度 max-h-[450px] 并隐藏溢出 overflow-hidden
+          2. 解锁状态：max-h-full (无限制)，显示全部
       ========================================================= */}
       <div 
         className={`
-          transition-all duration-700 ease-in-out
-          ${isUnlocked ? 'filter-none opacity-100' : 'filter blur-xl scale-110 opacity-60 pointer-events-none select-none'}
+          relative w-full transition-all duration-700 ease-in-out
+          ${isUnlocked ? 'max-h-full opacity-100' : 'max-h-[450px] overflow-hidden'}
         `}
-        // 如果内容很少，给一个最小高度，保证锁界面能放得下
-        style={{ minHeight: isUnlocked ? 'auto' : '320px' }} 
       >
-        <Callout block={cleanBlock}>
-           {/* 如果未解锁且内容是空的（例如只有图片），为了撑起模糊背景的颜色，
-               我们可以让它默认渲染，Callout 组件会自动处理 children */}
-           {children}
-        </Callout>
+        
+        {/* 内容层：模糊处理 */}
+        <div 
+            className={`
+                h-full w-full
+                ${!isUnlocked && 'filter blur-2xl scale-105 opacity-50 pointer-events-none select-none'}
+            `}
+        >
+            <Callout block={cleanBlock}>
+                {children}
+            </Callout>
+        </div>
+
+        {/* 覆盖层：未解锁时，给底部加一个渐变遮罩，让截断更自然 */}
+        {!isUnlocked && (
+             <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white dark:from-[#121212] to-transparent z-10"></div>
+        )}
+
       </div>
 
 
       {/* =========================================================
-          第二层：上层遮罩层 (The Overlay Layer)
-          逻辑：使用 absolute inset-0 覆盖在内容之上
+          锁界面 UI 层 (Overlay)
+          使用 absolute inset-0 居中显示在限制了高度的容器内
       ========================================================= */}
       {!isUnlocked && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-white/40 dark:bg-black/40 backdrop-blur-md transition-all">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4">
           
-          {/* 装饰：再次叠加一层微弱的渐变光，增强氛围 */}
-          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 pointer-events-none"></div>
-
-          <div className="relative z-30 flex flex-col items-center w-full max-w-md">
+          <div className="relative z-30 flex flex-col items-center w-full max-w-sm p-6 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-lg">
             
             <h3 className="font-extrabold text-2xl mb-2 text-neutral-900 dark:text-white drop-shadow-md">
               受保护的内容
             </h3>
-            <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-8 font-medium text-center drop-shadow-sm">
-              此内容已被模糊处理，请输入密码还原。
+            <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-6 font-medium text-center">
+              内容已折叠隐藏，请输入密码查看完整内容。
             </p>
 
-            <div className="w-full flex flex-col sm:flex-row gap-3">
+            <div className="w-full flex flex-col gap-3">
               <input 
                 type="password" 
-                placeholder="密码..."
+                placeholder="访问密码"
                 className={`
-                  flex-1 px-5 py-3 rounded-xl 
+                  w-full px-4 py-3 rounded-xl text-center font-bold tracking-widest
                   text-neutral-900 
-                  bg-white/80 dark:bg-black/60
+                  bg-white/60 dark:bg-black/50
                   border-2 backdrop-blur-xl outline-none transition-all
-                  placeholder-neutral-500
+                  placeholder-neutral-500 placeholder:font-normal placeholder:tracking-normal
                   ${error 
                     ? 'border-red-500 ring-2 ring-red-500/30' 
-                    : 'border-white/20 dark:border-white/10 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/30'
+                    : 'border-white/30 dark:border-white/10 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/30'
                   }
                 `}
                 value={input}
@@ -112,7 +124,7 @@ export const EncryptedCallout = ({ block, children }: { block: any; children: an
               <button 
                 onClick={handleUnlock}
                 className={`
-                  px-6 py-3 rounded-xl font-bold text-white whitespace-nowrap
+                  w-full px-6 py-3 rounded-xl font-bold text-white
                   bg-blue-600 hover:bg-blue-500
                   border-b-[4px] border-blue-800 hover:border-blue-700
                   active:border-b-0 active:translate-y-[4px]
@@ -120,15 +132,15 @@ export const EncryptedCallout = ({ block, children }: { block: any; children: an
                   transition-all duration-100
                 `}
               >
-                解锁 →
+                解锁全部内容
               </button>
             </div>
 
             {/* 错误提示 */}
             <div className={`
-              mt-4 px-4 py-1.5 rounded-full text-sm font-bold text-red-600 bg-red-100/90 backdrop-blur-sm
+              mt-3 px-3 py-1 rounded-full text-xs font-bold text-red-600 bg-red-100/90 backdrop-blur-sm
               transition-all duration-300 transform
-              ${error ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90 pointer-events-none'}
+              ${error ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90 pointer-events-none absolute'}
             `}>
               密码错误
             </div>
@@ -137,17 +149,21 @@ export const EncryptedCallout = ({ block, children }: { block: any; children: an
         </div>
       )}
 
-      {/* 解锁后的重新上锁按钮 (右上角悬浮) */}
+      {/* 解锁后的控制按钮 */}
       {isUnlocked && (
         <div className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
            <button 
              onClick={() => {
                localStorage.removeItem(`unlocked-${block.id}`);
                setIsUnlocked(false);
+               // 重新上锁时滚动回顶部，体验更好
+               if (containerRef.current) {
+                   containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+               }
              }}
-             className="text-xs bg-black/10 dark:bg-white/10 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded backdrop-blur-md text-neutral-500 transition-colors"
+             className="text-xs bg-black/5 dark:bg-white/10 hover:bg-neutral-800 hover:text-white px-3 py-1.5 rounded backdrop-blur-md text-neutral-500 transition-colors"
            >
-             🔒 锁定
+             🔒 锁定折叠
            </button>
         </div>
       )}
