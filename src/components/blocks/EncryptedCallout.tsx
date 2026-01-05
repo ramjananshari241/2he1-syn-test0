@@ -36,104 +36,122 @@ export const EncryptedCallout = ({ block, children }: { block: any; children: an
     }
   };
 
-  // --- 状态 A: 已解锁 ---
-  if (isUnlocked) {
-    const cleanBlock = {
-      ...block,
-      callout: { ...block.callout, rich_text: [] }
-    };
+  // 🎨 预处理 Block：
+  // 无论是否解锁，我们都先把 "LOCK:xxx" 这行字去掉，
+  // 否则在模糊背景里会看到这行乱码，影响美观。
+  const cleanBlock = {
+    ...block,
+    callout: { ...block.callout, rich_text: [] }
+  };
 
-    return (
-      <div className="relative animate-fade-in group">
-        <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+  return (
+    <div className="relative my-8 rounded-2xl overflow-hidden shadow-2xl group border border-neutral-200 dark:border-neutral-800">
+      
+      {/* =========================================================
+          第一层：底层内容层 (The Content Layer)
+          逻辑：始终渲染内容！但是未解锁时，加高斯模糊，禁止鼠标交互
+      ========================================================= */}
+      <div 
+        className={`
+          transition-all duration-700 ease-in-out
+          ${isUnlocked ? 'filter-none opacity-100' : 'filter blur-xl scale-110 opacity-60 pointer-events-none select-none'}
+        `}
+        // 如果内容很少，给一个最小高度，保证锁界面能放得下
+        style={{ minHeight: isUnlocked ? 'auto' : '320px' }} 
+      >
+        <Callout block={cleanBlock}>
+           {/* 如果未解锁且内容是空的（例如只有图片），为了撑起模糊背景的颜色，
+               我们可以让它默认渲染，Callout 组件会自动处理 children */}
+           {children}
+        </Callout>
+      </div>
+
+
+      {/* =========================================================
+          第二层：上层遮罩层 (The Overlay Layer)
+          逻辑：使用 absolute inset-0 覆盖在内容之上
+      ========================================================= */}
+      {!isUnlocked && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-white/40 dark:bg-black/40 backdrop-blur-md transition-all">
+          
+          {/* 装饰：再次叠加一层微弱的渐变光，增强氛围 */}
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 pointer-events-none"></div>
+
+          <div className="relative z-30 flex flex-col items-center w-full max-w-md">
+            
+            <h3 className="font-extrabold text-2xl mb-2 text-neutral-900 dark:text-white drop-shadow-md">
+              受保护的内容
+            </h3>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-8 font-medium text-center drop-shadow-sm">
+              此内容已被模糊处理，请输入密码还原。
+            </p>
+
+            <div className="w-full flex flex-col sm:flex-row gap-3">
+              <input 
+                type="password" 
+                placeholder="密码..."
+                className={`
+                  flex-1 px-5 py-3 rounded-xl 
+                  text-neutral-900 
+                  bg-white/80 dark:bg-black/60
+                  border-2 backdrop-blur-xl outline-none transition-all
+                  placeholder-neutral-500
+                  ${error 
+                    ? 'border-red-500 ring-2 ring-red-500/30' 
+                    : 'border-white/20 dark:border-white/10 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/30'
+                  }
+                `}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if(error) setError(false);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+              />
+
+              <button 
+                onClick={handleUnlock}
+                className={`
+                  px-6 py-3 rounded-xl font-bold text-white whitespace-nowrap
+                  bg-blue-600 hover:bg-blue-500
+                  border-b-[4px] border-blue-800 hover:border-blue-700
+                  active:border-b-0 active:translate-y-[4px]
+                  shadow-lg shadow-blue-900/40
+                  transition-all duration-100
+                `}
+              >
+                解锁 →
+              </button>
+            </div>
+
+            {/* 错误提示 */}
+            <div className={`
+              mt-4 px-4 py-1.5 rounded-full text-sm font-bold text-red-600 bg-red-100/90 backdrop-blur-sm
+              transition-all duration-300 transform
+              ${error ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90 pointer-events-none'}
+            `}>
+              密码错误
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 解锁后的重新上锁按钮 (右上角悬浮) */}
+      {isUnlocked && (
+        <div className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
            <button 
              onClick={() => {
                localStorage.removeItem(`unlocked-${block.id}`);
                setIsUnlocked(false);
              }}
-             className="text-xs bg-neutral-200 dark:bg-neutral-800/80 hover:bg-red-500 hover:text-white px-2 py-1 rounded-md text-neutral-500 backdrop-blur-sm transition-colors shadow-sm"
+             className="text-xs bg-black/10 dark:bg-white/10 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded backdrop-blur-md text-neutral-500 transition-colors"
            >
-             🔒 重新上锁
+             🔒 锁定
            </button>
         </div>
-        <Callout block={cleanBlock}>{children}</Callout>
-      </div>
-    );
-  }
+      )}
 
-  // --- 状态 B: 未解锁 (毛玻璃特效版) ---
-  return (
-    // 容器：使用 backdrop-blur 实现毛玻璃，bg-opacity 实现半透明
-    <div className="relative my-8 overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 shadow-2xl bg-white/70 dark:bg-[#121212]/60 backdrop-blur-xl">
-      
-      {/* 🌟 背景装饰光斑 (现在位于毛玻璃下方，会产生漂亮的晕染效果) */}
-      <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-blue-500/20 blur-[80px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-purple-500/20 blur-[80px] pointer-events-none"></div>
-
-      <div className="relative z-10 py-12 px-8 flex flex-col items-center justify-center text-center select-none">
-        
-        <h3 className="font-extrabold text-2xl mb-3 bg-clip-text text-transparent bg-gradient-to-r from-neutral-800 to-neutral-500 dark:from-white dark:to-neutral-300 drop-shadow-sm">
-          受保护的内容
-        </h3>
-        
-        <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-8 max-w-xs leading-relaxed font-medium">
-          该区域包含加密的图片或文字，请输入访问密码以解锁查看。
-        </p>
-        
-        <div className="w-full max-w-sm flex flex-col sm:flex-row gap-4 items-stretch">
-          {/* ⌨️ 输入框：半透明背景 */}
-          <input 
-            type="password" 
-            placeholder="请输入密码..."
-            className={`
-              flex-1 px-5 py-3 rounded-xl 
-              text-neutral-900 dark:text-white
-              bg-white/50 dark:bg-black/30
-              border-2 transition-all duration-300 outline-none backdrop-blur-sm
-              placeholder-neutral-500 dark:placeholder-neutral-500
-              ${error 
-                ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/20' 
-                : 'border-white/50 dark:border-white/10 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 hover:bg-white/80 dark:hover:bg-black/50'
-              }
-            `}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              if(error) setError(false);
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
-          />
-
-          {/* 🚀 3D 立体按钮 */}
-          <button 
-            onClick={handleUnlock}
-            className={`
-              group relative px-6 py-3 rounded-xl font-bold text-white transition-all duration-100
-              bg-blue-600/90 hover:bg-blue-500
-              border-b-[4px] border-blue-800 hover:border-blue-700
-              active:border-b-0 active:translate-y-[4px]
-              shadow-lg shadow-blue-500/30 backdrop-blur-md
-              flex items-center justify-center gap-2 whitespace-nowrap
-            `}
-          >
-            <span>解锁</span>
-            <svg 
-              className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" 
-              fill="none" viewBox="0 0 24 24" stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </button>
-        </div>
-
-        {/* 错误提示 */}
-        <div className={`
-          mt-4 text-sm font-bold text-red-500 flex items-center gap-2 transition-all duration-300 bg-red-100/80 dark:bg-red-900/30 px-3 py-1 rounded-full backdrop-blur-sm
-          ${error ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none h-0'}
-        `}>
-          <span>🚫 密码错误</span>
-        </div>
-      </div>
     </div>
   );
 };
