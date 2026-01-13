@@ -7,14 +7,18 @@ import { DynamicIcon } from '../DynamicIcon'
 
 const LinkIcon = ({ icon }: { icon: string }) => {
   if (!icon) return null;
-  const size = 20; 
+  const size = 18; 
   if (isValidUrl(icon) || icon.startsWith('/')) {
-    return <img className="drop-shadow-sm" style={{width: size, height: size}} src={icon} alt="icon" />
+    // ✨ 修改点：将 mr-1.5 改为 md:mr-1.5。这样在手机端没有右边距，图标才能绝对居中
+    return <img className="drop-shadow-sm md:mr-1.5" style={{width: size, height: size}} src={icon} alt="icon" />
   }
-  return <div className="drop-shadow-sm"><DynamicIcon nameIcon={icon} propsIcon={{ size }} /></div>
+  // ✨ 修改点：同上，md:mr-1.5
+  return <div className="drop-shadow-sm md:mr-1.5"><DynamicIcon nameIcon={icon} propsIcon={{ size }} /></div>
 }
 
 export const ProfileWidget = ({ data }: { data: any }) => {
+  const { isMobile } = useScreenSize()
+
   const avatarSrc = data?.logo?.src || data?.image || data?.avatar || '';
   const name = data?.name || 'PRO BLOG';
   const bio = data?.description || '';
@@ -29,53 +33,64 @@ export const ProfileWidget = ({ data }: { data: any }) => {
       `}</style>
 
       <div className="relative h-full w-full group/card transition-transform duration-500 ease-out hover:scale-[1.015]">
+        
+        {/* 1. 流光边缘 */}
         <div className="absolute -inset-[1px] rounded-[26px] bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 opacity-0 group-hover/card:opacity-100 blur-[2px] transition-opacity animate-border-flow"></div>
 
-        <div className="relative h-full w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl bg-[#151516]/80 backdrop-blur-2xl flex flex-col p-6">
+        {/* 2. 毛玻璃主体 */}
+        <div className="relative h-full w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl bg-[#151516]/80 backdrop-blur-2xl flex flex-col p-5 md:p-6">
+          
           <div className="relative z-10 flex flex-col h-full justify-between">
             
-            {/* 上半部分：比例恢复大气 */}
+            {/* 上半部分内容 */}
             <div className="flex flex-row items-center gap-5">
                 <div className="relative shrink-0">
                   <div className="absolute -inset-1 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full blur opacity-30 group-hover/card:opacity-50 transition duration-500"></div>
-                  <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full ring-2 ring-white/10 overflow-hidden bg-neutral-800">
+                  <div className="relative w-16 h-16 md:w-18 md:h-18 rounded-full ring-2 ring-white/10 overflow-hidden bg-neutral-800">
                     {avatarSrc ? <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-500 text-2xl font-bold">P</div>}
                   </div>
                 </div>
 
                 <div className="flex flex-col min-w-0">
-                    <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight antialiased truncate">{name}</h2>
-                    <p className="text-xs md:text-sm text-gray-400 font-medium line-clamp-2 leading-snug antialiased mt-1">{bio}</p>
+                    <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight antialiased drop-shadow-md truncate">
+                      {name}
+                    </h2>
+                    <p className="text-xs md:text-sm text-gray-400 font-medium line-clamp-2 leading-snug antialiased mt-1">
+                      {bio}
+                    </p>
                 </div>
             </div>
 
-            {/* 下半部分：大尺寸拉长按钮组 */}
-            <div className="w-full mt-6">
-              {/* gap-2 缩小间距，按钮横向占得更满 */}
+            {/* 3. 下半部分：按钮组 */}
+            <div className="w-full mt-4">
               <div className="grid grid-cols-3 gap-2 w-full">
                 
-                {/* 按钮高度 h-11 到 h-12，纵向占得更多 */}
-                <Link href="/about" className="group/btn relative h-11 md:h-12 w-full rounded-xl overflow-hidden flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg" style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' }}>
-                  <div className="relative z-10 flex items-center justify-center gap-1.5 text-white font-bold antialiased">
+                {/* 按钮 1 */}
+                <Link href="/about" className="group/btn relative h-11 md:h-12 w-full rounded-xl overflow-hidden flex items-center justify-center text-[11px] md:text-xs font-bold text-white transition-all hover:brightness-110 active:scale-95 shadow-lg" style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' }}>
+                  <div className="relative z-10 flex items-center justify-center">
                     <LinkIcon icon="FaCrown" />
-                    {/* 电脑端显示完整文字，移动端隐藏 */}
-                    <span className="hidden md:inline text-xs tracking-wide">入会说明</span>
+                    {/* ✨ 修改点：添加 hidden md:inline 类。在手机端隐藏文字 */}
+                    <span className="hidden md:inline leading-none">入会说明</span>
                   </div>
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer z-0 pointer-events-none"></div>
                 </Link>
 
-                <Link href="/download" className="group/btn relative h-11 md:h-12 w-full rounded-xl overflow-hidden flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
-                  <div className="relative z-10 flex items-center justify-center gap-1.5 text-white font-bold antialiased">
+                {/* 按钮 2 */}
+                <Link href="/download" className="group/btn relative h-11 md:h-12 w-full rounded-xl overflow-hidden flex items-center justify-center text-[11px] md:text-xs font-bold text-white transition-all hover:brightness-110 active:scale-95 shadow-lg" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
+                  <div className="relative z-10 flex items-center justify-center">
                     <LinkIcon icon="IoMdCloudDownload" />
-                    <span className="hidden md:inline text-xs tracking-wide">下载说明</span>
+                    {/* ✨ 修改点：同上 */}
+                    <span className="hidden md:inline leading-none">下载说明</span>
                   </div>
-                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/btn:animate-shimmer z-0 pointer-events-none"></div>
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer z-0 pointer-events-none"></div>
                 </Link>
 
-                <Link href="/friends" className="group/btn relative h-11 md:h-12 w-full rounded-xl overflow-hidden flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' }}>
-                  <div className="relative z-10 flex items-center justify-center gap-1.5 text-white font-bold antialiased">
+                {/* 按钮 3 */}
+                <Link href="/friends" className="group/btn relative h-11 md:h-12 w-full rounded-xl overflow-hidden flex items-center justify-center text-[11px] md:text-xs font-bold text-white transition-all hover:brightness-110 active:scale-95 shadow-lg" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #0284c7 100%)' }}>
+                  <div className="relative z-10 flex items-center justify-center">
                     <LinkIcon icon="HiOutlineViewGridAdd" />
-                    <span className="hidden md:inline text-xs tracking-wide">更多资源</span>
+                    {/* ✨ 修改点：同上 */}
+                    <span className="hidden md:inline leading-none">更多资源</span>
                   </div>
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-shimmer z-0 pointer-events-none"></div>
                 </Link>
