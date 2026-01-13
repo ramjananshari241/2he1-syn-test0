@@ -62,10 +62,10 @@ export const StatsWidget = ({ data }: { data: BlogStats }) => {
 
           <div className="p-8 text-center flex flex-col items-center">
             <h3 className="text-xl font-bold text-white mb-2 tracking-wide drop-shadow-sm">
-              👑永久会员：￥000
+              游客您好
             </h3>
             <p className="text-xs text-gray-400 mb-6 font-medium leading-relaxed">
-              请打开网页右下角客服工具发送当前站点编号，按照指引完成注册及购买，点击复制👇
+              请查看首页“入会说明”并按照指引完成会员注册及购买，点击复制下方编号👇
             </p>
             
             <div 
@@ -174,7 +174,7 @@ export const StatsWidget = ({ data }: { data: BlogStats }) => {
                     transition-all duration-300
                     hover:scale-[1.03] hover:shadow-white/30 active:scale-95"
                 >
-                  <span className="relative z-10">👑会员价格</span>
+                  <span className="relative z-10">加入会员</span>
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover/btn:animate-shimmer z-0 pointer-events-none"></div>
                 </button>
 
