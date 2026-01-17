@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+// @ts-ignore
+import { createPortal } from 'react-dom'
 
 // 硬编码站长ID
 const SHOP_CODE = "PRO-001A"
@@ -9,18 +11,20 @@ export const StatsWidget = ({ data }: { data: any }) => {
   const [showModal, setShowModal] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [imgError, setImgError] = useState(false) // 新增：控制图片加载失败的状态
 
   // 1. 数据解析
   const post = data || {};
   
-  // 图片逻辑不变
-  const coverSrc = post.pageCoverThumbnail || post.pageCover || post.cover || ''; 
+  // 📸 核心修复：图片取值顺序调整
+  // NotionNext 格式化后通常把有效图片放在 pageCover 中
+  const coverSrc = post.pageCover || post.pageCoverThumbnail || post.cover || ''; 
   
   const title = post.title || '暂无公告';
   const summary = post.summary || post.excerpt || '暂无详细内容...';
   
-  // 🛑 核心修复：因为 Notion 类型改为 Page，所以路径直接是 /slug
-  const slug = post.slug ? `/${post.slug}` : null;
+  // 🔗 核心修复：强制加上 /post/ 前缀
+  const slug = post.slug ? `/post/${post.slug}` : null;
 
   useEffect(() => {
     setMounted(true)
@@ -44,7 +48,8 @@ export const StatsWidget = ({ data }: { data: any }) => {
   // --- 弹窗组件 ---
   const Modal = () => {
     if (!mounted) return null
-    return (
+    // @ts-ignore
+    return createPortal(
       <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
         <style jsx>{`
           @keyframes modalEnter { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
@@ -61,7 +66,8 @@ export const StatsWidget = ({ data }: { data: any }) => {
           </div>
           <button className="mt-5 w-full py-2 rounded-lg bg-white text-black text-xs font-bold hover:bg-gray-200 transition-colors" onClick={() => setShowModal(false)}>关闭</button>
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 
@@ -83,17 +89,25 @@ export const StatsWidget = ({ data }: { data: any }) => {
       {showModal && <Modal />}
 
       <div className="relative h-full w-full group/card transition-transform duration-500 ease-out hover:scale-[1.015]">
+        
+        {/* 流光边缘 */}
         <div className="absolute -inset-[1px] rounded-[26px] bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 opacity-0 group-hover/card:opacity-70 blur-sm transition-opacity duration-500 animate-border-flow"></div>
+
+        {/* 主体容器 */}
         <div className="relative h-full w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl bg-[#151516] flex flex-col">
           
+          {/* ================= 背景图层 (智能兜底版) ================= */}
           <div className="absolute inset-0 z-0">
-            {coverSrc ? (
+            {coverSrc && !imgError ? (
               <img 
                 src={coverSrc} 
                 alt={title} 
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-110 opacity-90"
+                // ⚠️ 关键修复：如果图片加载失败，自动切换 imgError 状态，触发下方的兜底背景
+                onError={() => setImgError(true)}
               />
             ) : (
+              // 兜底背景：当没有图片 或 图片挂了 时显示
               <div className="w-full h-full bg-gradient-to-br from-indigo-900 to-purple-900">
                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-[40px]"></div>
               </div>
@@ -101,22 +115,27 @@ export const StatsWidget = ({ data }: { data: any }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/20"></div>
           </div>
 
+          {/* ================= 内容层 ================= */}
           <div className="relative z-10 flex flex-col h-full justify-between p-5 md:p-6">
             
+            {/* 上半部分：公告内容 */}
             {/* @ts-ignore */}
             <Wrapper {...wrapperProps}>
                <div className="mb-2 flex items-center gap-1.5 opacity-90">
                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                  <span className="text-[10px] font-bold text-white/80 tracking-widest uppercase">公告</span>
                </div>
+
                <h2 className="text-xl md:text-2xl font-extrabold text-white leading-tight tracking-tight mb-2 group-hover/text:text-purple-300 transition-colors line-clamp-2">
                  {title}
                </h2>
+
                <p className="text-xs text-gray-300/90 font-medium line-clamp-2 leading-relaxed">
                  {summary}
                </p>
             </Wrapper>
 
+            {/* 下半部分：站长 ID 按钮 */}
             <div className="w-full mt-4 relative z-20">
               <button 
                 onClick={(e) => {
