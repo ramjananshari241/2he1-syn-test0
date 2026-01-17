@@ -9,7 +9,6 @@ import getBlogStats from '../lib/blog/getBlogStats'
 import { withNavFooterStaticProps } from '../lib/blog/withNavFooterStaticProps'
 import { getWidgets } from '../lib/notion/getBlogData'
 import { getLimitPosts } from '../lib/notion/getDatabase'
-import { getGlobalData } from '../lib/notion/getNotionData' // 确保引入这个
 
 import { MainPostsCollection } from '../components/section/MainPostsCollection'
 import { MorePostsCollection } from '../components/section/MorePostsCollection'
@@ -54,10 +53,10 @@ export const getStaticProps: GetStaticProps = withNavFooterStaticProps(
     // 3. 获取所有 Widget 类型的页面 (用于 Profile 等)
     const rawWidgets = await getWidgets()
 
-    // --- 🔥 核心修复：从全局页面数据中查找 Page 类型的公告 ---
-    // sharedPageStaticProps.props 包含通过 getGlobalData 获取的 allNavPages
-    // Page 类型的文章通常会被归类到 allNavPages 中
-    const allPages = sharedPageStaticProps?.props?.allNavPages || []
+    // --- 🔥 核心修复：直接从 sharedPageStaticProps 获取全局页面数据 ---
+    // 不需要额外 import getGlobalData，因为它已经传进来了
+    // 使用 (as any) 绕过类型检查，直接读取 allNavPages
+    const allPages = (sharedPageStaticProps?.props as any)?.allNavPages || []
     
     // 在所有 Page 中查找 slug 为 'announcement' 的页面
     const announcementData = allPages.find((p: any) => p.slug === 'announcement')
