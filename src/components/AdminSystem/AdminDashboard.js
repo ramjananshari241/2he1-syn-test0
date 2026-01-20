@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ==========================================
-// 1. 图标库 (完整版)
+// 1. 图标库
 // ==========================================
 const Icons = {
   Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
@@ -96,10 +96,8 @@ const GlobalStyle = () => (
 );
 
 // ==========================================
-// 3. 辅助组件 (这是之前报错缺失的部分！)
+// 3. 辅助组件
 // ==========================================
-
-// ✅ 之前缺少的 SearchInput 组件
 const SearchInput = ({ value, onChange }) => (
   <div className="group">
     <svg className="search-icon" aria-hidden="true" viewBox="0 0 24 24"><g><path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path></g></svg>
@@ -107,7 +105,6 @@ const SearchInput = ({ value, onChange }) => (
   </div>
 );
 
-// ✅ 之前缺少的 StepAccordion 组件
 const StepAccordion = ({ step, title, isOpen, onToggle, children }) => (
   <div>
     <div className="acc-btn" onClick={onToggle}>
@@ -118,7 +115,6 @@ const StepAccordion = ({ step, title, isOpen, onToggle, children }) => (
   </div>
 );
 
-// ✅ 之前缺少的 AnimatedBtn 组件
 const AnimatedBtn = ({ text, onClick, style }) => (
   <button className="animated-button" onClick={onClick} style={style}>
     <svg viewBox="0 0 24 24" className="arr-2" xmlns="http://www.w3.org/2000/svg"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path></svg>
@@ -128,7 +124,6 @@ const AnimatedBtn = ({ text, onClick, style }) => (
   </button>
 );
 
-// ✅ 之前缺少的 SlidingNav 组件
 const SlidingNav = ({ activeIdx, onSelect }) => {
   const icons = [Icons.FolderMode, Icons.CoverMode, Icons.TextMode, Icons.GridMode];
   return (
@@ -139,7 +134,6 @@ const SlidingNav = ({ activeIdx, onSelect }) => {
   );
 };
 
-// ✅ 之前缺少的 FullScreenLoader 组件
 const FullScreenLoader = () => (
   <div className="loader-overlay">
     <div className="loader">
@@ -171,7 +165,6 @@ const cleanAndFormat = (input) => {
   } catch (e) { return input; }
 };
 
-// 积木编辑器
 const BlockBuilder = ({ blocks, setBlocks }) => {
   const [movingId, setMovingId] = useState(null);
   const addBlock = (type) => setBlocks([...blocks, { id: Date.now() + Math.random(), type, content: '', pwd: '' }]);
@@ -226,7 +219,6 @@ const BlockBuilder = ({ blocks, setBlocks }) => {
   );
 };
 
-// Notion 预览
 const NotionView = ({ blocks }) => (
   <div style={{color:'#e1e1e3', fontSize:'15px', lineHeight:'1.8'}}>
     {blocks?.map((b, i) => {
@@ -246,12 +238,13 @@ const NotionView = ({ blocks }) => (
   </div>
 );
 
-// --- 主组件 ---
+// ==========================================
+// 4. 主组件
+// ==========================================
 export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
   const [view, setView] = useState('list'), [viewMode, setViewMode] = useState('covered'), [posts, setPosts] = useState([]), [options, setOptions] = useState({ categories: [], tags: [] }), [loading, setLoading] = useState(false), [activeTab, setActiveTab] = useState('Post'), [searchQuery, setSearchQuery] = useState(''), [showAllTags, setShowAllTags] = useState(false), [selectedFolder, setSelectedFolder] = useState(null), [previewData, setPreviewData] = useState(null);
   const [form, setForm] = useState({ title: '', slug: '', excerpt: '', content: '', category: '', tags: '', cover: '', status: 'Published', type: 'Post', date: '' }), [currentId, setCurrentId] = useState(null);
-  
   const [siteTitle, setSiteTitle] = useState('PROBLOG');
   const [navIdx, setNavIdx] = useState(1); 
   const [expandedStep, setExpandedStep] = useState(1);
@@ -338,6 +331,43 @@ export default function AdminDashboard() {
   const handleEdit = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if (d.success) { setForm(d.post); setEditorBlocks(parseContentToBlocks(d.post.content)); setCurrentId(p.id); setView('edit'); setExpandedStep(1); } }).finally(()=>setLoading(false)); };
   const handleCreate = () => { setForm({ title: '', slug: 'p-'+Date.now().toString(36), excerpt:'', content:'', category:'', tags:'', cover:'', status:'Published', type: 'Post', date: new Date().toISOString().split('T')[0] }); setEditorBlocks([]); setCurrentId(null); setView('edit'); setExpandedStep(1); };
   
+  // ✅ 替换的 handleSave 函数（含错误弹窗）
+  const handleSave = async () => {
+    setLoading(true);
+    const fullContent = editorBlocks.map(b => {
+      if (b.type === 'h1') return `# ${b.content}`;
+      if (b.type === 'note') return `\`${b.content}\``;
+      if (b.type === 'lock') return `:::lock ${b.pwd}\n${b.content}\n:::`;
+      return b.content;
+    }).join('\n\n');
+
+    try {
+      const res = await fetch('/api/admin/post', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          ...form, 
+          content: fullContent, 
+          id: currentId,
+          type: form.type || 'Post' 
+        })
+      });
+      const d = await res.json();
+      
+      if (!d.success) {
+        alert(`保存失败！Notion 错误:\n${d.error}`);
+        console.error("Save Error:", d);
+      } else {
+        alert('保存成功！');
+        setView('list');
+        fetchPosts();
+      }
+    } catch (e) {
+      alert('网络错误: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getFilteredPosts = () => {
      let list = posts.filter(p => {
         if (activeTab === 'Page') return p.type === 'Page' && ['about', 'download'].includes(p.slug);
@@ -421,7 +451,7 @@ export default function AdminDashboard() {
                </div>
             </StepAccordion>
             <BlockBuilder blocks={editorBlocks} setBlocks={setEditorBlocks} />
-            <button onClick={()=>{setLoading(true); fetch('/api/admin/post',{method:'POST', body:JSON.stringify({...form, id:currentId})}).then(()=>{setView('list'); fetchPosts();})}} disabled={!isFormValid} style={{width:'100%', padding:'20px', background:isFormValid?'#fff':'#222', color:isFormValid?'#000':'#666', border:'none', borderRadius:'12px', fontWeight:'bold', fontSize:'16px', marginTop:'40px', cursor:isFormValid?'pointer':'not-allowed', transition:'0.3s'}}>{currentId ? '保存修改' : '确认发布'}</button>
+            <button onClick={handleSave} disabled={!isFormValid} style={{width:'100%', padding:'20px', background:isFormValid?'#fff':'#222', color:isFormValid?'#000':'#666', border:'none', borderRadius:'12px', fontWeight:'bold', fontSize:'16px', marginTop:'40px', cursor:isFormValid?'pointer':'not-allowed', transition:'0.3s'}}>{currentId ? '保存修改' : '确认发布'}</button>
           </main>
         )}
         {previewData && <div className="modal-bg" onClick={()=>setPreviewData(null)}><div className="modal-box" onClick={e=>e.stopPropagation()}><div style={{padding:'20px 25px', borderBottom:'1px solid #333', display:'flex', justifyContent:'space-between', alignItems:'center'}}><strong>预览: {previewData.title}</strong><button onClick={()=>setPreviewData(null)} style={{background:'none', border:'none', color:'#666', fontSize:'24px', cursor:'pointer'}}>×</button></div><div className="modal-body"><NotionView blocks={previewData.rawBlocks} /></div></div></div>}
