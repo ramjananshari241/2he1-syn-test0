@@ -1,55 +1,45 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 /** @type {import('next').NextConfig} */
-
-const withPWA = require('next-pwa')({
-    dest: "public",
-    register: true,
-    skipWaiting: true,
-    disable: process.env.NODE_ENV === "development",
-})
-
 const nextConfig = {
-    reactStrictMode: true,
-    
-    // 1. 【核心修复】忽略 TypeScript 和 ESLint 报错，强制打包
-    // 只有这样，你粘贴过来的旧 JS 代码才能在 TS 项目里过关
-    typescript: {
-        ignoreBuildErrors: true,
-    },
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
+  reactStrictMode: true,
+  
+  // 1. 强力忽略检查 (让旧代码通过的关键)
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
 
-    // 2. 保持超时设置
-    staticPageGenerationTimeout: 300,
+  // 2. 基础配置
+  staticPageGenerationTimeout: 300,
+  trailingSlash: true,
 
-    // 3. 确保关闭 AppDir 避免冲突
-    experimental: {
-        appDir: false,
-        workerThreads: false,
-        cpus: 1, 
-    },
+  // 3. 确保关闭 AppDir (我们用的是 Pages 路由)
+  experimental: {
+    appDir: false,
+    workerThreads: false,
+    cpus: 1,
+  },
 
-    webpack(config) {
-        config.module.rules.push({
-            test: /\.svg$/,
-            use: ["@svgr/webpack"]
-        })
-        return config
-    },
+  // 4. 图片域名白名单 (保持你原有的配置)
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    domains: [
+      'www.notion.so',
+      'images.unsplash.com',
+      'img.notionusercontent.com',
+      'file.notion.so',
+      'static.anzifan.com',
+      's3.us-west-2.amazonaws.com'
+    ],
+    unoptimized: true,
+  },
 
-    images: {
-        formats: ['image/avif', 'image/webp'],
-        domains: [
-            'www.notion.so',
-            'images.unsplash.com',
-            'img.notionusercontent.com',
-            'file.notion.so',
-            'static.anzifan.com'
-        ],
-        unoptimized: true,
-    },
-    trailingSlash: true,
+  // 5. Webpack 配置 (支持 SVG)
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ["@svgr/webpack"]
+    })
+    return config
+  }
 }
 
-module.exports = withPWA(nextConfig);
+// 直接导出配置，不使用 withPWA 包裹，防止报错
+module.exports = nextConfig;
