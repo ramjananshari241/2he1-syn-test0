@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ==========================================
-// 1. 图标库 (新增 Top 置顶图标)
+// 1. 图标库
 // ==========================================
 const Icons = {
   Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
@@ -18,6 +18,7 @@ const Icons = {
   ArrowUp: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>,
   ArrowDown: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>,
   Top: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 11 12 5 6 11"></polyline><polyline points="18 18 12 12 6 18"></polyline></svg>,
+  Bottom: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 6 12 12 18 6"></polyline><polyline points="6 13 12 19 18 13"></polyline></svg>,
   Settings: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
 };
 
@@ -96,9 +97,6 @@ const GlobalStyle = () => (
   `}} />
 );
 
-// ==========================================
-// 3. 辅助组件
-// ==========================================
 const SearchInput = ({ value, onChange }) => (
   <div className="group">
     <svg className="search-icon" aria-hidden="true" viewBox="0 0 24 24"><g><path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path></g></svg>
@@ -148,7 +146,6 @@ const FullScreenLoader = () => (
   </div>
 );
 
-// 工具函数
 const cleanAndFormat = (input) => {
   if (!input) return "";
   try {
@@ -172,26 +169,33 @@ const BlockBuilder = ({ blocks, setBlocks }) => {
   const updateBlock = (id, val, key='content') => { setBlocks(blocks.map(b => b.id === id ? { ...b, [key]: val } : b)); };
   const removeBlock = (id) => { setBlocks(blocks.filter(b => b.id !== id)); };
   
-  // ✅ 修复：更稳健的排序逻辑
   const moveBlock = (index, direction) => {
     if (direction === -1 && index === 0) return;
     if (direction === 1 && index === blocks.length - 1) return;
-    const newBlocks = [...blocks]; // 创建副本
+    const newBlocks = [...blocks];
     const targetIndex = index + direction;
-    // 交换
     [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
-    
     setBlocks(newBlocks);
     setMovingId(newBlocks[targetIndex].id);
     setTimeout(() => setMovingId(null), 600);
   };
 
-  // ✅ 新增：一键置顶函数
   const moveToTop = (index) => {
     if (index === 0) return;
     const newBlocks = [...blocks];
-    const [item] = newBlocks.splice(index, 1); // 移除
-    newBlocks.unshift(item); // 插入到开头
+    const [item] = newBlocks.splice(index, 1);
+    newBlocks.unshift(item);
+    setBlocks(newBlocks);
+    setMovingId(item.id);
+    setTimeout(() => setMovingId(null), 600);
+  };
+
+  // ✅ 新增：一键置底
+  const moveToBottom = (index) => {
+    if (index === blocks.length - 1) return;
+    const newBlocks = [...blocks];
+    const [item] = newBlocks.splice(index, 1);
+    newBlocks.push(item); // 推到末尾
     setBlocks(newBlocks);
     setMovingId(item.id);
     setTimeout(() => setMovingId(null), 600);
@@ -215,10 +219,11 @@ const BlockBuilder = ({ blocks, setBlocks }) => {
         {blocks.map((b, index) => (
           <div key={b.id} className={`block-card ${movingId === b.id ? 'just-moved' : ''}`}>
             <div className="block-left-ctrl">
-               {/* ✅ 新增：置顶按钮 */}
                <div className="move-btn" onClick={() => moveToTop(index)} title="置顶"><Icons.Top /></div>
                <div className="move-btn" onClick={() => moveBlock(index, -1)}><Icons.ArrowUp /></div>
                <div className="move-btn" onClick={() => moveBlock(index, 1)}><Icons.ArrowDown /></div>
+               {/* ✅ 新增：置底按钮 */}
+               <div className="move-btn" onClick={() => moveToBottom(index)} title="置底"><Icons.Bottom /></div>
             </div>
             <div className="block-label">{getBlockLabel(b.type)}</div>
             {b.type === 'h1' && <input className="glow-input" placeholder="输入大标题..." value={b.content} onChange={e=>updateBlock(b.id, e.target.value)} style={{fontSize:'20px', fontWeight:'bold'}} />}
@@ -238,9 +243,28 @@ const BlockBuilder = ({ blocks, setBlocks }) => {
   );
 };
 
-// ==========================================
-// 4. 主组件
-// ==========================================
+const NotionView = ({ blocks }) => {
+  if (!blocks || !Array.isArray(blocks)) return <div style={{padding:20, color:'#666'}}>暂无预览内容</div>;
+  return (
+    <div style={{color:'#e1e1e3', fontSize:'15px', lineHeight:'1.8'}}>
+      {blocks.map((b, i) => {
+        const type = b.type; const data = b[type]; const text = data?.rich_text?.[0]?.plain_text || "";
+        if(type==='heading_1') return <h1 key={i} style={{fontSize:'1.8em', borderBottom:'1px solid #333', paddingBottom:'8px', margin:'24px 0 12px'}}>{text}</h1>;
+        if(type==='paragraph') {
+            const richText = data?.rich_text?.[0];
+            if (richText?.annotations?.code) return <div key={i} style={{margin:'10px 0', borderLeft:'3px solid #ff6b6b', paddingLeft:'10px'}}><span style={{color:'#ff6b6b', fontFamily:'monospace', fontSize:'0.95em'}}>{text}</span></div>;
+            return <p key={i} style={{margin:'10px 0', minHeight:'1em'}}>{text}</p>;
+        }
+        if(type==='divider') return <hr key={i} style={{border:'none', borderTop:'1px solid #444', margin:'24px 0'}} />;
+        if(type==='image') { const url = data?.file?.url || data?.external?.url; if (!url) return null; const isVideo = url.match(/\.(mp4|mov|webm|ogg)(\?|$)/i); if(isVideo) return <div key={i} style={{display:'flex', justifyContent:'center', margin:'20px 0'}}><div style={{width:'100%', maxHeight:'500px', borderRadius:'8px', background:'#000', display:'flex', justifyContent:'center'}}><video src={url} controls preload="metadata" style={{maxWidth:'100%', maxHeight:'100%'}} /></div></div>; return <div key={i} style={{display:'flex', justifyContent:'center', margin:'20px 0'}}><div style={{width: '100%', height: '500px', background: '#000', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden'}}><img src={url} style={{maxWidth: '100%', maxHeight: '100%', objectFit: 'contain'}} alt="" /></div></div>; }
+        if(type==='video' || type==='embed') { let url = data?.file?.url || data?.external?.url || data?.url; if(!url) return null; const isY = url.includes('youtube')||url.includes('youtu.be'); if(isY){if(url.includes('watch?v='))url=url.replace('watch?v=','embed/');if(url.includes('youtu.be/'))url=url.replace('youtu.be/','www.youtube.com/embed/');} return <div key={i} style={{display:'flex', justifyContent:'center', margin:'20px 0'}}>{(type==='embed'||isY)?<iframe src={url} style={{width:'100%',maxWidth:'800px',height:'450px',border:'none',borderRadius:'8px',background:'#000'}} allowFullScreen />:<video src={url} controls style={{width:'100%',maxHeight:'500px',borderRadius:'8px',background:'#000'}}/>}</div>; }
+        if(type==='callout') return <div key={i} style={{background:'#2d2d30', padding:'20px', borderRadius:'12px', border:'1px solid #3e3e42', display:'flex', gap:'15px', margin:'20px 0'}}><div style={{fontSize:'1.4em'}}>{b.callout.icon?.emoji || '🔒'}</div><div style={{flex:1}}><div style={{fontWeight:'bold', color:'greenyellow', marginBottom:'4px'}}>{text}</div><div style={{fontSize:'12px', opacity:0.5}}>[ 加密内容已受保护 ]</div></div></div>;
+        return null;
+      })}
+    </div>
+  );
+};
+
 export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
   const [view, setView] = useState('list'), [viewMode, setViewMode] = useState('covered'), [posts, setPosts] = useState([]), [options, setOptions] = useState({ categories: [], tags: [] }), [loading, setLoading] = useState(false), [activeTab, setActiveTab] = useState('Post'), [searchQuery, setSearchQuery] = useState(''), [showAllTags, setShowAllTags] = useState(false), [selectedFolder, setSelectedFolder] = useState(null), [previewData, setPreviewData] = useState(null);
@@ -261,6 +285,27 @@ export default function AdminDashboard() {
     } finally { setLoading(false); } 
   }
   useEffect(() => { if (mounted) fetchPosts(); }, [mounted]);
+
+  // ✅ 2. 修复后退按钮逻辑
+  useEffect(() => {
+    if (view === 'edit') {
+      window.history.pushState({ view: 'edit' }, '', '?mode=edit');
+    } else {
+      // 如果回到了 list，把 url 改回去
+      if (window.location.search.includes('mode=edit')) {
+         window.history.back();
+      }
+    }
+
+    const onPopState = () => {
+      // 监听浏览器的“后退”按钮
+      if (view === 'edit') {
+        setView('list'); // 拦截后退，改为切回列表
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [view]);
 
   const updateSiteTitle = async () => {
     const newTitle = prompt("请输入新的网站标题:", siteTitle);
@@ -327,11 +372,12 @@ export default function AdminDashboard() {
     return res;
   };
 
-  const handlePreview = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if(d.success) setPreviewData(d.post); }).finally(()=>setLoading(false)); };
+  // ✅ 1. 修复 Preview 报错：增加可选链保护
+  const handlePreview = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if(d.success && d.post && d.post.rawBlocks) setPreviewData(d.post); }).finally(()=>setLoading(false)); };
+  
   const handleEdit = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if (d.success) { setForm(d.post); setEditorBlocks(parseContentToBlocks(d.post.content)); setCurrentId(p.id); setView('edit'); setExpandedStep(1); } }).finally(()=>setLoading(false)); };
   const handleCreate = () => { setForm({ title: '', slug: 'p-'+Date.now().toString(36), excerpt:'', content:'', category:'', tags:'', cover:'', status:'Published', type: 'Post', date: new Date().toISOString().split('T')[0] }); setEditorBlocks([]); setCurrentId(null); setView('edit'); setExpandedStep(1); };
   
-  // ✅ 修复：handleSave 加入弹窗逻辑
   const handleSave = async () => {
     setLoading(true);
     const fullContent = editorBlocks.map(b => {
@@ -356,7 +402,7 @@ export default function AdminDashboard() {
       if (!d.success) {
         alert(`❌ 保存失败！\n\n错误信息:\n${d.error}`);
       } else {
-        alert("✅ 保存成功！"); // 弹窗提示
+        alert("✅ 保存成功！");
         setView('list');
         fetchPosts();
       }
