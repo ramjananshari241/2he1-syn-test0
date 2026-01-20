@@ -19,7 +19,7 @@ const Icons = {
   ArrowDown: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>,
   Top: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 11 12 5 6 11"></polyline><polyline points="18 18 12 12 6 18"></polyline></svg>,
   Bottom: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 6 12 12 18 6"></polyline><polyline points="6 13 12 19 18 13"></polyline></svg>,
-  Settings: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  Settings: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
 };
 
 // ==========================================
@@ -97,6 +97,9 @@ const GlobalStyle = () => (
   `}} />
 );
 
+// ==========================================
+// 3. 辅助组件
+// ==========================================
 const SearchInput = ({ value, onChange }) => (
   <div className="group">
     <svg className="search-icon" aria-hidden="true" viewBox="0 0 24 24"><g><path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path></g></svg>
@@ -146,6 +149,7 @@ const FullScreenLoader = () => (
   </div>
 );
 
+// 工具函数：清洗 URL
 const cleanAndFormat = (input) => {
   if (!input) return "";
   try {
@@ -190,12 +194,12 @@ const BlockBuilder = ({ blocks, setBlocks }) => {
     setTimeout(() => setMovingId(null), 600);
   };
 
-  // ✅ 新增：一键置底
+  // 一键置底
   const moveToBottom = (index) => {
     if (index === blocks.length - 1) return;
     const newBlocks = [...blocks];
     const [item] = newBlocks.splice(index, 1);
-    newBlocks.push(item); // 推到末尾
+    newBlocks.push(item);
     setBlocks(newBlocks);
     setMovingId(item.id);
     setTimeout(() => setMovingId(null), 600);
@@ -222,7 +226,6 @@ const BlockBuilder = ({ blocks, setBlocks }) => {
                <div className="move-btn" onClick={() => moveToTop(index)} title="置顶"><Icons.Top /></div>
                <div className="move-btn" onClick={() => moveBlock(index, -1)}><Icons.ArrowUp /></div>
                <div className="move-btn" onClick={() => moveBlock(index, 1)}><Icons.ArrowDown /></div>
-               {/* ✅ 新增：置底按钮 */}
                <div className="move-btn" onClick={() => moveToBottom(index)} title="置底"><Icons.Bottom /></div>
             </div>
             <div className="block-label">{getBlockLabel(b.type)}</div>
@@ -286,21 +289,18 @@ export default function AdminDashboard() {
   }
   useEffect(() => { if (mounted) fetchPosts(); }, [mounted]);
 
-  // ✅ 2. 修复后退按钮逻辑
+  // ✅ 修复：后退按钮逻辑
   useEffect(() => {
     if (view === 'edit') {
       window.history.pushState({ view: 'edit' }, '', '?mode=edit');
     } else {
-      // 如果回到了 list，把 url 改回去
       if (window.location.search.includes('mode=edit')) {
          window.history.back();
       }
     }
-
     const onPopState = () => {
-      // 监听浏览器的“后退”按钮
       if (view === 'edit') {
-        setView('list'); // 拦截后退，改为切回列表
+        setView('list'); // 拦截后退
       }
     };
     window.addEventListener('popstate', onPopState);
@@ -340,12 +340,19 @@ export default function AdminDashboard() {
     setForm(prev => ({ ...prev, content: newContent }));
   }, [editorBlocks]);
 
+  // ✅ 核心修复：引入“状态机”解析器
   const parseContentToBlocks = (md) => {
     if(!md) return [];
     const lines = md.split(/\r?\n/);
     const res = [];
-    let buffer = []; let isLocking = false; let lockPwd = ''; let lockBuffer = [];  
+    
+    let buffer = []; 
+    let isLocking = false; 
+    let lockPwd = ''; 
+    let lockBuffer = [];  
+
     const stripMd = (str) => { const match = str.match(/(?:!|)?\[.*?\]\((.*?)\)/); return match ? match[1] : str; };
+
     const flushBuffer = () => {
       if (buffer.length > 0) {
         const joined = buffer.map(stripMd).join('\n').trim();
@@ -359,20 +366,58 @@ export default function AdminDashboard() {
         buffer = [];
       }
     };
+
+    // --- 状态机循环 ---
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]; const trimmed = line.trim();
-      if (!isLocking && trimmed.startsWith(':::lock')) { flushBuffer(); isLocking = true; lockPwd = trimmed.replace(':::lock', '').replace(/[>*\s🔒]/g, '').trim(); continue; }
-      if (isLocking && trimmed === ':::') { isLocking = false; const joinedLock = lockBuffer.map(stripMd).join('\n').trim(); res.push({ id: Date.now() + Math.random(), type: 'lock', pwd: lockPwd, content: joinedLock }); lockBuffer = []; continue; }
-      if (isLocking) { lockBuffer.push(line); continue; }
-      if (trimmed.startsWith('# ')) { flushBuffer(); res.push({ id: Date.now() + Math.random(), type: 'h1', content: trimmed.replace('# ', '') }); continue; }
-      if (!trimmed) { flushBuffer(); continue; }
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // 1. 如果不在录制模式，且遇到 :::lock -> 开始录制
+      if (!isLocking && trimmed.startsWith(':::lock')) {
+        flushBuffer(); // 先把之前的存了
+        isLocking = true;
+        lockPwd = trimmed.replace(':::lock', '').replace(/[>*\s🔒]/g, '').trim();
+        continue;
+      }
+
+      // 2. 如果在录制模式，且遇到 ::: -> 结束录制
+      if (isLocking && trimmed === ':::') {
+        isLocking = false;
+        // 把录制的所有行合并成一个块
+        const joinedLock = lockBuffer.map(stripMd).join('\n').trim();
+        res.push({ id: Date.now() + Math.random(), type: 'lock', pwd: lockPwd, content: joinedLock });
+        lockBuffer = [];
+        continue;
+      }
+
+      // 3. 如果在录制模式 -> 无脑存入 buffer，不做任何解析
+      if (isLocking) {
+        lockBuffer.push(line);
+        continue;
+      }
+
+      // 4. 普通模式下的标题解析
+      if (trimmed.startsWith('# ')) {
+        flushBuffer();
+        res.push({ id: Date.now() + Math.random(), type: 'h1', content: trimmed.replace('# ', '') });
+        continue;
+      }
+
+      // 5. 普通空行 -> 触发 flush
+      if (!trimmed) {
+        flushBuffer();
+        continue;
+      }
+
+      // 6. 普通内容 -> 存入 buffer
       buffer.push(line);
     }
+    
+    // 循环结束，清理残留
     flushBuffer();
     return res;
   };
 
-  // ✅ 1. 修复 Preview 报错：增加可选链保护
   const handlePreview = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if(d.success && d.post && d.post.rawBlocks) setPreviewData(d.post); }).finally(()=>setLoading(false)); };
   
   const handleEdit = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if (d.success) { setForm(d.post); setEditorBlocks(parseContentToBlocks(d.post.content)); setCurrentId(p.id); setView('edit'); setExpandedStep(1); } }).finally(()=>setLoading(false)); };
