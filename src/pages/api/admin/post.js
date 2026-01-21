@@ -6,9 +6,7 @@ const notion = new Client({
 });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// === 1. 强力解析器 (支持媒体、标题、加密块内部解析) ===
+// === 1. 解析行内容 (旧版逻辑复刻) ===
 function parseLinesToChildren(text) {
   const lines = text.split(/\r?\n/);
   const blocks = [];
@@ -17,7 +15,6 @@ function parseLinesToChildren(text) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // 媒体识别
     const mdMatch = trimmed.match(/^!\[.*?\]\((.*?)\)$/) || trimmed.match(/^\[.*?\]\((.*?)\)$/);
     let potentialUrl = mdMatch ? mdMatch[1] : trimmed;
     const urlMatch = potentialUrl.match(/https?:\/\/[^\s)\]"]+/);
@@ -31,13 +28,19 @@ function parseLinesToChildren(text) {
     }
 
     if (trimmed.startsWith('# ')) { blocks.push({ object: 'block', type: 'heading_1', heading_1: { rich_text: [{ text: { content: trimmed.replace('# ', '') } }] } }); continue; } 
-    if (trimmed.startsWith('`') && trimmed.endsWith('`') && trimmed.length > 1) { blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ text: { content: trimmed.slice(1, -1) }, annotations: { code: true, color: 'red' } }] } }); continue; }
+    
+    // 🟢 恢复：反引号注释块
+    if (trimmed.startsWith('`') && trimmed.endsWith('`') && trimmed.length > 1) { 
+        blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ text: { content: trimmed.slice(1, -1) }, annotations: { code: true, color: 'red' } }] } }); 
+        continue; 
+    }
+    
     blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ text: { content: trimmed } }] } });
   }
   return blocks;
 }
 
-// === 2. 积木转换器 (状态机逻辑) ===
+// === 2. 状态机转换器 (旧版逻辑复刻) ===
 function mdToBlocks(markdown) {
   if (!markdown) return [];
   const rawChunks = markdown.split(/\n{2,}/);
@@ -49,13 +52,24 @@ function mdToBlocks(markdown) {
   for (let chunk of rawChunks) {
     const t = chunk.trim();
     if (!t) continue;
+
     if (!isLocking && t.startsWith(':::lock')) {
-      if (t.endsWith(':::')) mergedChunks.push(t);
-      else { isLocking = true; buffer = t; }
+      if (t.endsWith(':::')) {
+        mergedChunks.push(t);
+      } else {
+        isLocking = true;
+        buffer = t;
+      }
     } else if (isLocking) {
       buffer += "\n\n" + t;
-      if (t.endsWith(':::')) { isLocking = false; mergedChunks.push(buffer); buffer = ""; }
-    } else { mergedChunks.push(t); }
+      if (t.endsWith(':::')) {
+        isLocking = false;
+        mergedChunks.push(buffer);
+        buffer = "";
+      }
+    } else {
+      mergedChunks.push(t);
+    }
   }
   if (buffer) mergedChunks.push(buffer);
 
@@ -73,18 +87,20 @@ function mdToBlocks(markdown) {
   return blocks;
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default async function handler(req, res) {
   const { id } = req.query;
   const databaseId = process.env.NOTION_DATABASE_ID || process.env.NOTION_PAGE_ID;
 
   try {
-    // GET: 获取详情 (用于回显)
+    // === GET ===
     if (req.method === 'GET') {
       const page = await notion.pages.retrieve({ page_id: id });
       const mdblocks = await n2m.pageToMarkdown(id);
       const p = page.properties;
       
-      // 这里的逻辑主要是为了把 Notion 的 callout 还原回 :::lock 给前端
+      // 🟢 修复：回显处理，确保 Lock 块不被拆分
       let rawContent = "";
       mdblocks.forEach(b => {
         if (b.type === 'callout' && b.parent.includes('LOCK:')) {
@@ -98,7 +114,7 @@ export default async function handler(req, res) {
       });
       const mdStringObj = n2m.toMarkdownString(mdblocks);
       
-      // 获取原始块数据用于预览组件
+      // 获取原始 Block 用于预览
       let rawBlocks = [];
       try { const blocksRes = await notion.blocks.children.list({ block_id: id }); rawBlocks = blocksRes.results; } catch (e) {}
 
@@ -121,10 +137,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // POST: 保存/创建
+    // === POST ===
     if (req.method === 'POST') {
       const body = JSON.parse(req.body);
       const { id, title, content, slug, excerpt, category, tags, status, date, type, cover } = body;
+      
+      // 调用状态机转换
       const newBlocks = mdToBlocks(content);
 
       const props = {};
@@ -137,38 +155,27 @@ export default async function handler(req, res) {
         const tagList = tags.split(',').filter(t => t.trim()).map(t => ({ name: t.trim() }));
         if (tagList.length > 0) props["tags"] = { multi_select: tagList };
       }
-      // 兼容 Status 和 Select
-      props["status"] = { status: { name: status || "Published" } }; 
+      props["status"] = { status: { name: status || "Published" } }; // 注意这里 status 类型
       props["type"] = { select: { name: type || "Post" } };
       if (date) props["date"] = { date: { start: date } };
       if (cover && cover.startsWith('http')) props["cover"] = { url: cover };
 
       if (id) {
-        // 更新属性
         await notion.pages.update({ page_id: id, properties: props });
-        
-        // 删除旧内容
+        // 先删
         const children = await notion.blocks.children.list({ block_id: id });
         if (children.results.length > 0) {
-            // 分批并发删除
+            // 分批删除防止限流
             const chunks = [];
-            for (let i = 0; i < children.results.length; i += 3) {
-                chunks.push(children.results.slice(i, i + 3));
-            }
-            for (const chunk of chunks) {
-                await Promise.all(chunk.map(b => notion.blocks.delete({ block_id: b.id })));
-            }
+            for (let i = 0; i < children.results.length; i += 3) { chunks.push(children.results.slice(i, i + 3)); }
+            for (const chunk of chunks) { await Promise.all(chunk.map(b => notion.blocks.delete({ block_id: b.id }))); }
         }
-        
-        // 极速写入 (100个一批)
+        // 后写 (极速模式)
         for (let i = 0; i < newBlocks.length; i += 100) {
           await notion.blocks.children.append({ block_id: id, children: newBlocks.slice(i, i + 100) });
-          // 小停顿防止速率限制
           if (i + 100 < newBlocks.length) await sleep(100); 
         }
-
       } else {
-        // 创建
         await notion.pages.create({
           parent: { database_id: databaseId },
           properties: props,
@@ -178,6 +185,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    // === DELETE ===
     if (req.method === 'DELETE') {
       await notion.pages.update({ page_id: id, archived: true });
       return res.status(200).json({ success: true });
