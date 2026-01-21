@@ -4,12 +4,13 @@ import type { NextRequest } from 'next/server'
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // 🔒 核心修复：如果不包含 /admin，直接放行，绝不弹窗
+  // 1. 严格限制：只拦截 /admin 开头的路径
+  // 如果不是 admin 页面，直接放行，绝对不会干扰首页
   if (!pathname.startsWith('/admin')) {
     return NextResponse.next()
   }
 
-  // --- 只有进入 /admin 才会执行下面的验证 ---
+  // 2. 验证逻辑
   const basicAuth = req.headers.get('authorization')
 
   if (basicAuth) {
@@ -24,7 +25,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 验证失败：返回 401，Body 为 null (防止报错)
+  // 3. 验证失败返回 401 (Body 为 null 以兼容 Vercel)
   return new NextResponse(null, {
     status: 401,
     headers: {
@@ -33,7 +34,7 @@ export function middleware(req: NextRequest) {
   })
 }
 
-// ⚠️ 范围限制：只针对 admin 路径生效
+// 4. 配置匹配器
 export const config = {
   matcher: ['/admin/:path*', '/admin'],
 }
