@@ -48,7 +48,7 @@ export const getStaticProps: GetStaticProps = withNavFooterStaticProps(
     const postsRaw = await getLimitPosts(sum, ApiScope.Home)
     const allFormattedPosts = await formatPosts(postsRaw)
 
-    // --- 🔥 核心修复逻辑 ---
+    // --- 🔥原有逻辑：公告栏拦截 ---
     
     // A. 拦截：找到 Slug 为 'announcement' 的文章
     const announcementPost = allFormattedPosts.find(p => p.slug === 'announcement') || null
@@ -62,6 +62,18 @@ export const getStaticProps: GetStaticProps = withNavFooterStaticProps(
     const preFormattedWidgets = await preFormatWidgets(rawWidgets)
     const formattedWidgets = await formatWidgets(preFormattedWidgets, blogStats)
 
+    // =========================================================
+    // 🛡️ 核心修复：数据“防弹”处理 (新增部分)
+    // =========================================================
+    
+    // 修复 widgets.profile.links 为 undefined 导致的序列化报错
+    // 即使后台删除了 Profile 数据，这里也会兜底为 null，防止炸站
+    if (formattedWidgets && formattedWidgets.profile) {
+        if (formattedWidgets.profile.links === undefined) {
+            formattedWidgets.profile.links = null;
+        }
+    }
+
     // 3. 注入：把拦截下来的公告塞给 widgets 对象
     ;(formattedWidgets as any).announcement = announcementPost
 
@@ -70,7 +82,7 @@ export const getStaticProps: GetStaticProps = withNavFooterStaticProps(
         ...sharedPageStaticProps.props,
         // 这里返回过滤后的文章列表
         posts: filteredPosts.slice(0, sum - 5), 
-        widgets: formattedWidgets,
+        widgets: formattedWidgets || {}, // 确保不为空
       },
       // revalidate: CONFIG.NEXT_REVALIDATE_SECONDS,
     }
