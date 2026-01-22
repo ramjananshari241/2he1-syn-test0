@@ -1,7 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
-// ================= 1. 图标库 =================
+// ==========================================
+// 1. 图标库
+// ==========================================
 const Icons = {
   Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
   Edit: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"></path></svg>,
@@ -149,9 +151,9 @@ const FullScreenLoader = () => (
   </div>
 );
 
-// 工具函数：清洗 URL
+// ✅ 核心修复 1: 增强型工具函数 (处理空值)
 const cleanAndFormat = (input) => {
-  if (!input) return "";
+  if (typeof input !== 'string') return "";
   try {
     const lines = input.split('\n').map(line => {
       let raw = line.trim();
@@ -164,7 +166,7 @@ const cleanAndFormat = (input) => {
       return raw;
     });
     return lines.filter(l=>l).join('\n');
-  } catch (e) { return input; }
+  } catch (e) { return ""; }
 };
 
 // ==========================================
@@ -315,7 +317,7 @@ export default function AdminDashboard() {
   const [isDeploying, setIsDeploying] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
-  // ✅ 核心修复：放宽表单验证，允许 Widget 无日期
+  // ✅ 核心修复：表单验证放宽（允许无日期，修复Widget编辑无反应）
   const isFormValid = form.title.trim() !== '';
 
   // 🛡️ 防崩检查: Fetch
@@ -349,7 +351,7 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('popstate', onPopState);
   }, [view]);
 
-  // 🟢 核心修复：智能解析器 (兼容 Notion 原生 Markdown)
+  // 🟢 核心修复：双模状态机解析 (彻底解决加密块炸裂)
   const parseContentToBlocks = (md) => {
     if(!md) return [];
     const lines = md.split(/\r?\n/);
@@ -388,7 +390,7 @@ export default function AdminDashboard() {
         continue;
       }
 
-      // B. Notion 返回的 Markdown 语法 > 🔒 (增强正则)
+      // 🟢 B. Notion 返回的 Markdown 语法 > 🔒 (精准匹配)
       if (!isLocking && trimmed.match(/^>\s*🔒\s*(\*\*)?LOCK:(.*?)(\*\*)?/)) {
         flushBuffer(); isLocking = true;
         const match = trimmed.match(/LOCK:(.*?)(\*|$)/);
@@ -396,18 +398,19 @@ export default function AdminDashboard() {
         continue;
       }
       
-      // C. 结束条件
+      // 🟢 C. 结束条件：非引用行且非空行 -> 结束录制
       if (isLocking && !trimmed.startsWith('>') && !trimmed.startsWith(':::') && trimmed !== '') {
          isLocking = false;
          const joinedLock = lockBuffer.join('\n').trim();
          res.push({ id: Date.now() + Math.random(), type: 'lock', pwd: lockPwd, content: joinedLock });
          lockBuffer = [];
-         i--; // 回退一行
+         i--; 
          continue;
       }
 
       if (isLocking) {
         let contentLine = line;
+        // 清洗 Notion 引用前缀
         if (contentLine.startsWith('> ')) contentLine = contentLine.substring(2);
         else if (contentLine.startsWith('>')) contentLine = contentLine.substring(1);
         if (contentLine.trim() === '---') continue;
@@ -432,14 +435,16 @@ export default function AdminDashboard() {
 
   const handlePreview = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if(d.success && d.post && d.post.rawBlocks) setPreviewData(d.post); }).finally(()=>setLoading(false)); };
   
-  // ✅ 核心修复：确保 Widget 编辑时 type 正确传递 + 格式化日期
+  // ✅ 核心修复：处理编辑 (日期格式化 + 判空)
   const handleEdit = (p) => { 
       setLoading(true); 
       fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ 
           if (d.success) { 
               // 格式化日期为 YYYY-MM-DD
               const safeDate = d.post.date ? d.post.date.substring(0, 10) : '';
-              setForm({ ...d.post, date: safeDate, type: d.post.type || 'Post' }); 
+              const safeCover = d.post.cover || '';
+              // 确保 Widget 的 type 被正确继承
+              setForm({ ...d.post, date: safeDate, cover: safeCover, type: d.post.type || 'Post' }); 
               setEditorBlocks(parseContentToBlocks(d.post.content)); 
               setCurrentId(p.id); 
               setView('edit'); 

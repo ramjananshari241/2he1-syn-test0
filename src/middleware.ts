@@ -4,8 +4,8 @@ import type { NextRequest } from 'next/server'
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // 🔒 只有路径以 /admin 开头才触发逻辑
-  // 这样绝对不会影响博客首页 (/)
+  // 🔒 这里的逻辑其实是双重保险
+  // 真正的拦截范围由底部的 config.matcher 决定
   if (pathname.startsWith('/admin')) {
     const basicAuth = req.headers.get('authorization')
 
@@ -13,7 +13,6 @@ export function middleware(req: NextRequest) {
       const authValue = basicAuth.split(' ')[1]
       const [user, pwd] = atob(authValue).split(':')
 
-      // 读取 Vercel 环境变量
       const validUser = process.env.AUTH_USER || 'admin'
       const validPass = process.env.AUTH_PASS || '123456'
 
@@ -22,7 +21,6 @@ export function middleware(req: NextRequest) {
       }
     }
 
-    // 验证失败返回 401
     return new NextResponse(null, {
       status: 401,
       headers: {
@@ -34,7 +32,8 @@ export function middleware(req: NextRequest) {
   return NextResponse.next()
 }
 
-// ⚠️ 缩小匹配范围：仅匹配 admin 路径
+// ✅ 核心修复：严格限制只拦截 /admin 开头的路径
+// 这样绝对不可能在首页 (/) 触发
 export const config = {
-  matcher: ['/admin/:path*', '/admin'],
+  matcher: ['/admin/:path*'],
 }
