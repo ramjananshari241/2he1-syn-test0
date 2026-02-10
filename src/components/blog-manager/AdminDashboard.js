@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import Head from 'next/head'; // 🟢 引入 Head 组件用于设置 Logo
+import Head from 'next/head'; // 🟢 引入 Head 组件控制浏览器标签
 
 // ================= 1. 图标库 =================
 const Icons = {
@@ -88,7 +88,6 @@ const GlobalStyle = () => (
     .input:active { transform: scale(0.95); }
     .input:focus { box-shadow: 0 0 0 2.5px #2f303d; }
     .search-icon { position: absolute; left: 1rem; fill: #bdbecb; width: 1rem; height: 1rem; pointer-events: none; z-index: 1; }
-    /* 悬浮按钮保持 150px 避开客服 */
     .fab-scroll { position: fixed; right: 30px; bottom: 150px; display: flex; flex-direction: column; gap: 10px; z-index: 99; }
     .fab-btn { width: 45px; height: 45px; background: greenyellow; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
     .fab-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(173, 255, 47, 0.4); }
@@ -150,6 +149,7 @@ const FullScreenLoader = () => (
   </div>
 );
 
+// 工具函数：清洗 URL
 const cleanAndFormat = (input) => {
   if (!input) return "";
   try {
@@ -168,7 +168,7 @@ const cleanAndFormat = (input) => {
 };
 
 // ==========================================
-// 4. 积木编辑器 (状态机逻辑 + 视角锁定)
+// 4. 积木编辑器
 // ==========================================
 const BlockBuilder = ({ blocks, setBlocks }) => {
   const [movingId, setMovingId] = useState(null);
@@ -302,9 +302,7 @@ export default function AdminDashboard() {
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [previewData, setPreviewData] = useState(null);
   
-  // 🟢 默认 Published
-  const [form, setForm] = useState({ title: '', slug: '', excerpt: '', content: '', category: '', tags: '', cover: '', status: 'Published', type: 'Post', date: '' });
-  const [currentId, setCurrentId] = useState(null);
+  const [form, setForm] = useState({ title: '', slug: '', excerpt: '', content: '', category: '', tags: '', cover: '', status: 'Published', type: 'Post', date: '' }), [currentId, setCurrentId] = useState(null);
   const [siteTitle, setSiteTitle] = useState('PROBLOG');
   const [navIdx, setNavIdx] = useState(1); 
   const [expandedStep, setExpandedStep] = useState(1);
@@ -350,7 +348,7 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('popstate', onPopState);
   }, [view]);
 
-  // 双模状态机解析 (保持不变)
+  // 双模状态机解析
   const parseContentToBlocks = (md) => {
     if(!md) return [];
     const lines = md.split(/\r?\n/);
@@ -434,6 +432,7 @@ export default function AdminDashboard() {
 
   const handlePreview = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if(d.success && d.post && d.post.rawBlocks) setPreviewData(d.post); }).finally(()=>setLoading(false)); };
   const handleEdit = (p) => { setLoading(true); fetch('/api/admin/post?id='+p.id).then(r=>r.json()).then(d=>{ if (d.success) { setForm(d.post); setEditorBlocks(parseContentToBlocks(d.post.content)); setCurrentId(p.id); setView('edit'); setExpandedStep(1); } }).finally(()=>setLoading(false)); };
+  
   // 🟢 修复：新建时默认 Published
   const handleCreate = () => { setForm({ title: '', slug: 'p-'+Date.now().toString(36), excerpt:'', content:'', category:'', tags:'', cover:'', status:'Published', type: 'Post', date: new Date().toISOString().split('T')[0] }); setEditorBlocks([]); setCurrentId(null); setView('edit'); setExpandedStep(1); };
   
@@ -448,12 +447,12 @@ export default function AdminDashboard() {
     }).join('\n\n');
 
     try {
-      // 🟢 修复：强制提交 Published 状态
       const res = await fetch('/api/admin/post', {
         method: 'POST',
         body: JSON.stringify({ 
           ...form, 
-          status: 'Published', // 强行发布
+          // 🟢 修复：强制提交 Published 状态
+          status: 'Published', 
           content: fullContent, 
           id: currentId,
           type: form.type || 'Post' 
@@ -465,7 +464,6 @@ export default function AdminDashboard() {
         alert(`❌ 保存失败！\n\n错误信息:\n${d.error}`);
       } else {
         alert("✅ 保存成功！");
-        try { await fetch('/api/admin/deploy'); } catch(e) {}
         setView('list');
         fetchPosts();
       }
@@ -476,26 +474,22 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleManualDeploy = async () => {
-     if (isDeploying) return;
-     if(confirm('确定要立即更新Blog吗？\n点击确定将立刻开始更新，在完成内容更新前请不要重复提交更新请求！')) {
-        await triggerDeploy();
-        alert('已触发更新！请耐心等待约 1 分钟。');
-     }
-  };
-  
-  const triggerDeploy = async () => {
-    setIsDeploying(true);
-    try { await fetch('/api/admin/deploy'); } catch(e) {}
-    setTimeout(() => setIsDeploying(false), 60000);
-  };
-
   const updateSiteTitle = async () => {
     const newTitle = prompt("请输入新的网站标题:", siteTitle);
     if (newTitle && newTitle !== siteTitle) {
         setLoading(true); await fetch('/api/admin/config', { method: 'POST', body: JSON.stringify({ title: newTitle }) });
         setSiteTitle(newTitle); setLoading(false);
     }
+  };
+
+  const handleManualDeploy = async () => {
+     if (isDeploying) return;
+     if(confirm('确定要立即更新Blog吗？\n点击确定将立刻开始更新，在完成内容更新前请不要重复提交更新请求！')) {
+        setIsDeploying(true);
+        try { await fetch('/api/admin/deploy'); } catch(e) {}
+        alert('已触发更新！请耐心等待约 1 分钟。');
+        setTimeout(() => setIsDeploying(false), 60000);
+     }
   };
 
   const deleteTagOption = (e, tagToDelete) => {
@@ -507,22 +501,18 @@ export default function AdminDashboard() {
 
   const handleNavClick = (idx) => { setNavIdx(idx); const modes = ['folder','covered','text','gallery']; setViewMode(modes[idx]); setSelectedFolder(null); };
 
-  // 🟢 修复：过滤器逻辑优化 (Page 优先，Post 次之)
   const getFilteredPosts = () => {
      let list = posts;
-     
-     // 1. 如果选了 Page，只显示 Page 类型
+     // 🟢 修复：过滤逻辑 (Page 优先)
      if (activeTab === 'Page') {
         list = list.filter(p => p.type === 'Page' && ['about', 'download'].includes(p.slug));
      } 
-     // 2. 如果选了 Widget，只显示 Widget
      else if (activeTab === 'Widget') {
         list = list.filter(p => p.type === 'Widget');
      }
-     // 3. 默认 (Post)，只显示 Post
      else {
-        list = list.filter(p => p.type === 'Post');
-        // 置顶逻辑
+        // 默认显示 Post (不含 Draft)
+        list = list.filter(p => p.type === 'Post' && p.status !== 'Draft');
         const sticky = list.find(p => p.slug === 'announcement');
         const others = list.filter(p => p.slug !== 'announcement');
         if (sticky) list = [sticky, ...others];
@@ -557,6 +547,7 @@ export default function AdminDashboard() {
            </div>
            
            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+             {/* 🟢 修复：更新按钮 */}
              <button onClick={handleManualDeploy} style={{background:'#424242', border: isDeploying ? '1px solid #555' : '1px solid greenyellow', opacity: isDeploying ? 0.5 : 1, padding:'10px', borderRadius:'8px', color: isDeploying ? '#888' : 'greenyellow', cursor: isDeploying ? 'not-allowed' : 'pointer'}} title="立即更新博客前端">
                <Icons.Refresh />
              </button>
@@ -569,7 +560,7 @@ export default function AdminDashboard() {
         {view === 'list' ? (
           <main>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
-               {/* 🟢 修复：移除了 Draft 标签 */}
+               {/* 🟢 修复：移除了 Draft Tab */}
                <div style={{background:'#424242', padding:'5px', borderRadius:'12px', display:'flex'}}>
                  {['Post', 'Widget', 'Page'].map(t => (
                    <button 
