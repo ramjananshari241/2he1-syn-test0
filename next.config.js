@@ -1,45 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
-  // 1. 强力忽略检查 (让旧代码通过的关键)
+  // 忽略各种检查，确保旧代码顺畅通过
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+  
+  // 给足每个页面的打包超时时间（防中断）
+  staticPageGenerationTimeout: 1200, 
+  trailingSlash: false, 
 
-  // 2. 基础配置
-  staticPageGenerationTimeout: 300,
-  trailingSlash: true,
-
-  // 3. 确保关闭 AppDir (我们用的是 Pages 路由)
-  experimental: {
-    appDir: false,
-    workerThreads: false,
-    cpus: 1,
-  },
-
-  // 4. 图片域名白名单 (保持你原有的配置)
+  // 🟢 移除了 cpus: 1 的性能限制，让 Vercel 满血并发打包
+  
   images: {
     formats: ['image/avif', 'image/webp'],
     domains: [
-      'www.notion.so',
-      'images.unsplash.com',
-      'img.notionusercontent.com',
-      'file.notion.so',
-      'static.anzifan.com',
-      's3.us-west-2.amazonaws.com'
+      'www.notion.so', 'images.unsplash.com', 'img.notionusercontent.com',
+      'file.notion.so', 'static.anzifan.com', 's3.us-west-2.amazonaws.com'
     ],
     unoptimized: true,
-  },
-
-  // 5. Webpack 配置 (支持 SVG)
-  webpack(config) {
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ["@svgr/webpack"]
-    })
-    return config
   }
 }
-
-// 直接导出配置，不使用 withPWA 包裹，防止报错
 module.exports = nextConfig;

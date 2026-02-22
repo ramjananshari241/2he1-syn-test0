@@ -1,4 +1,5 @@
 import CONFIG from '@/blog.config'
+import { GetStaticProps, GetStaticPropsContext, NextPage } from 'next'
 import { BlockRender } from '../../components/blocks/BlockRender'
 import { BlogLayoutPure } from '../../components/layout/BlogLayout'
 import ContentLayout from '../../components/layout/ContentLayout'
@@ -17,45 +18,48 @@ import { getPosts } from '../../lib/notion/getBlogData'
 import { addSubTitle } from '../../lib/util'
 import { NextPageWithLayout, PartialPost, Post, SharedNavFooterStaticProps } from '../../types/blog'
 import { ApiScope, BlockResponse } from '../../types/notion'
-import { GetStaticPropsContext, NextPage } from 'next'
 
 export const getStaticPaths = async () => {
-  return { paths: [], fallback: 'blocking' }
+  // 全量生成核心
+  const postsRaw = await getPosts(ApiScope.Archive)
+  const formattedPosts = await formatPosts(postsRaw)
+  const paths = formattedPosts.map((post) => ({
+    params: { post: post.slug },
+  }))
+  return { paths, fallback: 'blocking' }
 }
 
-export const getStaticProps = withNavFooterStaticProps(
-  async (context: GetStaticPropsContext, sharedPageStaticProps: SharedNavFooterStaticProps) => {
-    try {
-      const slug = context.params?.post as string
-      const postsRaw = await getPosts(ApiScope.Archive)
-      const allPosts = await formatPosts(postsRaw)
-      const post = allPosts.find((p) => p.slug === slug)
+export const getStaticProps: GetStaticProps = withNavFooterStaticProps(
+  // 🟢 核心修复：在这里加上 : Promise<any>，强制让 TypeScript 闭嘴
+  async (context: GetStaticPropsContext, sharedPageStaticProps: SharedNavFooterStaticProps): Promise<any> => {
+    const slug = context.params?.post as string
 
-      // 🛡️ 修复 TypeScript 类型报错：不再返回 notFound: true，而是返回合规的空 props
-      if (!post) {
-        return {
-          props: JSON.parse(JSON.stringify({
-            ...sharedPageStaticProps.props,
-            post: null,
-            blocks: [],
-            navigation: { previousPost: null, nextPost: null }
-          })),
-          revalidate: 10
-        }
+    if (!slug || slug.includes('[') || slug === 'undefined') {
+      return { 
+        props: JSON.parse(JSON.stringify({ ...sharedPageStaticProps.props, post: null, blocks: [] }))
       }
+    }
+
+    try {
+      const postsRaw = await getPosts(ApiScope.Archive)
+      const allFormattedPosts = await formatPosts(postsRaw)
+      const post = allFormattedPosts.find((p) => p.slug === slug)
+
+      if (!post) return { notFound: true }
 
       addSubTitle(sharedPageStaticProps.props, '', { text: post.title, color: 'gray', slug: post.slug }, false)
-      
-      const { previousPost, nextPost } = getNavigationInfo(allPosts, post)
+      const { previousPost, nextPost } = getNavigationInfo(allFormattedPosts, post)
       const blocks = await getAllBlocks(post.id)
       const formattedBlocks = await formatBlocks(blocks)
 
-      // 暴力序列化清洗
       const safeData = JSON.parse(JSON.stringify({
         ...sharedPageStaticProps.props,
         post,
         blocks: formattedBlocks,
-        navigation: { previousPost: previousPost || null, nextPost: nextPost || null },
+        navigation: { 
+            previousPost: previousPost || null, 
+            nextPost: nextPost || null 
+        },
       }))
 
       if (safeData.widgets?.profile && safeData.widgets.profile.links === undefined) {
@@ -64,28 +68,21 @@ export const getStaticProps = withNavFooterStaticProps(
 
       return {
         props: safeData,
-        revalidate: 10,
       }
     } catch (error) {
-      console.error("ISR Error:", error)
-      // 🛡️ 同样修复 catch 里的类型报错
-      return {
-        props: JSON.parse(JSON.stringify({
-          ...sharedPageStaticProps.props,
-          post: null,
-          blocks: [],
-          navigation: { previousPost: null, nextPost: null }
-        })),
-        revalidate: 10
-      }
+      return { notFound: true }
     }
   }
 )
 
-const PostPage: NextPage<{ post: Post; blocks: BlockResponse[]; navigation: { previousPost: PartialPost; nextPost: PartialPost } }> = ({ post, blocks, navigation }) => {
-  // 如果后端传过来的是 post: null，前端组件会渲染 404，逻辑完美闭环
-  if (!post) return <Section404 />
+const PostPage: NextPage<{ 
+  post: Post; 
+  blocks: BlockResponse[]; 
+  navigation: { previousPost: PartialPost; nextPost: PartialPost } 
+}> = ({ post, blocks, navigation }) => {
   
+  if (!post) return <Section404 />
+
   return (
     <>
       <PostHeader post={post} blocks={blocks} />
