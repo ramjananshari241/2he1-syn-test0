@@ -32,7 +32,8 @@ const PostFooter = ({ post }: { post: Post }) => {
           <TagCollection tags={post.tags} />
         </div>
         <div className="flex justify-between w-full gap-x-2">
-          <OverflowMarquee className="rounded-3xl">
+          {/* 🟢 已关闭：底部三个小标（本站首发、封面来源、知识共享） */}
+          {/* <OverflowMarquee className="rounded-3xl">
             <div className="flex items-center gap-2 rounded-3xl">
               {notRepost && <NotRepostDeclaration />}
               {isOriginalCover ? (
@@ -42,7 +43,10 @@ const PostFooter = ({ post }: { post: Post }) => {
               )}
               <CCDisclaimer />
             </div>
-          </OverflowMarquee>
+          </OverflowMarquee> */}
+          
+          {/* 这里的 UpdatedTime（显示xx小时前）保持不动 */}
+          <div className="flex-1"></div> {/* 占位符，保持时间靠右 */}
           <UpdatedTime date={post.date} />
         </div>
       </div>
@@ -93,7 +97,7 @@ const TagCollection = ({ tags }: { tags: Tag[] }) => {
 }
 
 const CCDisclaimer = () => {
-  const icons = [FaCreativeCommons, FaCreativeCommonsNc, FaCreativeCommonsBy]
+  const icons = [FaCreativeCommons, FaCreativeCommonsBy, FaCreativeCommonsNc]
   const text = '知识共享'
   const textColor = 'text-fuchsia-600 dark:text-fuchsia-400'
   const bgColor = 'bg-fuchsia-50 dark:bg-fuchsia-900/50'
