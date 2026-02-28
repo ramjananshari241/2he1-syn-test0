@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createPortal } from 'react-dom'
 
 // 🟢 你的自定义购买地址（请在这里修改为你真实的贩售机链接）
-const BUY_LINK = "https://van.pro-plus.top"
+const BUY_LINK = "https://van.pro-plus.top/buy"
 
 export const StatsWidget = ({ data }: { data: any }) => {
   const[showModal, setShowModal] = useState(false)
