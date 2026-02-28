@@ -127,7 +127,7 @@ export const StatsWidget = ({ data }: { data: any }) => {
                 <span className="text-blue-500 font-bold mr-1.5">1.</span>点击下方按钮跳转至官方自助贩售机。
               </p>
               <p className="text-xs text-gray-400 font-medium leading-relaxed">
-                <span className="text-blue-500 font-bold mr-1.5">2.</span>输入编号查找到您想购买的内容并完成支付。
+                <span className="text-blue-500 font-bold mr-1.5">2.</span>输入编号查找您想购买的内容并按照指引步骤完成支付。
               </p>
               <p className="text-xs text-gray-400 font-medium leading-relaxed">
                 <span className="text-blue-500 font-bold mr-1.5">3.</span>支付成功后自动发货，如有问题请联系右下角客服。
