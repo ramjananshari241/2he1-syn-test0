@@ -16,7 +16,7 @@ export const StatsWidget = ({ data }: { data: any }) => {
   
   // 🚫 彻底移除图片逻辑，只使用纯色背景 (保持原样不动)
   const title = post.title || '暂无公告';
-  const summary = post.summary || post.excerpt || '暂无详细内容...';
+  const summary = post.summary || post.excerpt || '自助购买👇';
   const slug = post.slug ? `/post/${post.slug}` : null;
 
   useEffect(() => {
