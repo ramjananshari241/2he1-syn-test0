@@ -487,7 +487,7 @@ export default function AdminDashboard() {
      if(confirm('确定要立即更新Blog吗？\n点击确定将立刻开始更新，在完成内容更新前请不要重复提交更新请求！')) {
         setIsDeploying(true);
         try { await fetch('/api/admin/deploy'); } catch(e) {}
-        alert('已触发更新！请耐心等待约 1 分钟。');
+        alert('已触发更新！请耐心等待（预计30分钟内完成）。请不要重复提交更新请求。');
         setTimeout(() => setIsDeploying(false), 60000);
      }
   };
