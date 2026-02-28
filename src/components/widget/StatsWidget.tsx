@@ -220,7 +220,7 @@ export const StatsWidget = ({ data }: { data: any }) => {
                   transition-all duration-300
                   hover:bg-white/20 hover:scale-[1.02] active:scale-95 active:bg-white/5"
               >
-                <span className="text-sm">🏧</span>
+                <span className="text-sm">🚛</span>
                 <span>前往贩售机</span>
               </button>
             </div>
