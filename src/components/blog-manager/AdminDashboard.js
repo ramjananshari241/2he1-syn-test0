@@ -570,7 +570,7 @@ export default function AdminDashboard() {
                 }} 
                 className="btn-ia"
               >
-                <span style={{fontSize: '16px'}}>👤</span> 登陆
+                <span style={{fontSize: '16px'}}>🌱</span> 登陆
               </button>
 
              <button onClick={() => window.open('https://pan.cloudreve.org/xxx', '_blank')} style={{background:'#a855f7', border:'none', padding:'10px 20px', borderRadius:'8px', color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', fontWeight:'bold', fontSize:'14px'}} className="btn-ia"><Icons.Tutorial /> 教程</button>
